@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Sleek Music Player</title>
+    <title>Sleek Music Player</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root {
@@ -203,9 +203,6 @@
             border-radius: 5px;
             margin-bottom: 8px;
             opacity: 0.7;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         .playlist-item:hover {
             background-color: #3a3a3a;
@@ -216,10 +213,6 @@
             background-color: #3a3a3a;
             color: var(--primary-color);
             opacity: 1;
-        }
-        .playlist-item-duration {
-            font-size: 0.8em;
-            color: var(--text-secondary);
         }
         .visualizer {
             display: flex;
@@ -247,22 +240,9 @@
                 max-height: none;
             }
         }
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: none;
-            color: var(--text-color);
-            cursor: pointer;
-            font-size: 24px;
-        }
     </style>
 </head>
 <body>
-    <button class="theme-toggle" id="theme-toggle">
-        <i class="material-icons">brightness_6</i>
-    </button>
     <div class="player-container">
         <div class="player">
             <div class="album-art">
@@ -313,7 +293,6 @@
         const albumArt = document.getElementById('album-art');
         const songTitleEl = document.getElementById('song-title');
         const artistEl = document.getElementById('artist');
-        const themeToggle = document.getElementById('theme-toggle');
 
         let isPlaying = false;
         let isShuffle = false;
@@ -321,9 +300,9 @@
         let currentSongIndex = 0;
 
         const songs = [
-            { title: 'Requim', artist: 'Vqesh', src: 'Audio/Requim.mp3', art: 'Cute.jpeg', duration: 180 },
-            { title: 'Dreamscape', artist: 'Vqesh', src: 'Audio/Dreamscape.mp3', art: 'Watching.png', duration: 210 },
-            { title: 'Echo', artist: 'Vqesh', src: 'Audio/Echo.mp3', art: 'Sleep.jpeg', duration: 195 },
+            { title: 'Requim', artist: 'Vqesh', src: 'Audio/Requim.mp3', art: 'Cute.jpeg' },
+            { title: 'Dreamscape', artist: 'Vqesh', src: 'Audio/Dreamscape.mp3', art: 'Watching.png' },
+            { title: 'Echo', artist: 'Vqesh', src: 'Audio/Echo.mp3', art: 'Sleep.jpeg' },
         ];
 
         function loadSong(index) {
@@ -447,10 +426,7 @@
         songs.forEach((song, index) => {
             const item = document.createElement('div');
             item.classList.add('playlist-item');
-            item.innerHTML = `
-                <span>${song.title} - ${song.artist}</span>
-                <span class="playlist-item-duration">${formatTime(song.duration)}</span>
-            `;
+            item.textContent = `${song.title} - ${song.artist}`;
             item.addEventListener('click', () => {
                 loadSong(index);
                 if (isPlaying) audioPlayer.play();
@@ -486,47 +462,6 @@
         });
         audioPlayer.addEventListener('loadedmetadata', () => {
             durationEl.textContent = formatTime(audioPlayer.duration);
-        });
-
-        // Theme toggle functionality
-        let isDarkTheme = true;
-        themeToggle.addEventListener('click', () => {
-            isDarkTheme = !isDarkTheme;
-            if (isDarkTheme) {
-                document.documentElement.style.setProperty('--bg-color', '#121212');
-                document.documentElement.style.setProperty('--surface-color', '#282828');
-                document.documentElement.style.setProperty('--text-color', '#ffffff');
-                document.documentElement.style.setProperty('--text-secondary', '#b3b3b3');
-            } else {
-                document.documentElement.style.setProperty('--bg-color', '#f5f5f5');
-                document.documentElement.style.setProperty('--surface-color', '#ffffff');
-                document.documentElement.style.setProperty('--text-color', '#333333');
-                document.documentElement.style.setProperty('--text-secondary', '#666666');
-            }
-        });
-
-        // Keyboard controls
-        document.addEventListener('keydown', (e) => {
-            switch(e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    togglePlayPause();
-                    break;
-                case 'ArrowLeft':
-                    audioPlayer.currentTime -= 5;
-                    break;
-                case 'ArrowRight':
-                    audioPlayer.currentTime += 5;
-                    break;
-                case 'ArrowUp':
-                    volumeSlider.value = Math.min(1, parseFloat(volumeSlider.value) + 0.1);
-                    handleVolumeChange();
-                    break;
-                case 'ArrowDown':
-                    volumeSlider.value = Math.max(0, parseFloat(volumeSlider.value) - 0.1);
-                    handleVolumeChange();
-                    break;
-            }
         });
 
         // Initial load
