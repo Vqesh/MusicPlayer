@@ -276,9 +276,9 @@
         let currentSongIndex = 0;
 
         const songs = [
-            { title: 'Digital Requim', artist: 'Vqesh', src: 'Digital-Requim.mp3', art: 'Cute.jpeg' },
-            { title: 'Digital Dreamscape', artist: 'Vqesh', src: 'Digital-Dreamscape.mp3', art: 'Watching.png' },
-            { title: 'Pixel Dreamscape', artist: 'Vqesh', src: 'Pixel-Dreamscape.mp3', art: 'Sleep.jpeg' },
+            { title: 'Requim', artist: 'Vqesh', src: 'Audio/Requim.mp3', art: 'Cute.jpeg' },
+            { title: 'Dreamscape', artist: 'Vqesh', src: 'Audio/Dreamscape.mp3', art: 'Watching.png' },
+            { title: 'Echo', artist: 'Vqesh', src: 'Audio/Echo.mp3', art: 'Sleep.jpeg' },
         ];
 
         function loadSong(index) {
@@ -312,18 +312,27 @@
             isPlaying = !isPlaying;
         }
 
-        function updateProgress() {
-            const { duration, currentTime } = audioPlayer;
-            const progressPercent = (currentTime / duration) * 100;
-            progressBar.style.width = `${progressPercent}%`;
-            currentTimeEl.textContent = formatTime(currentTime);
-            durationEl.textContent = formatTime(duration);
-        }
-
         function formatTime(time) {
+            if (isNaN(time) || time === Infinity) {
+                return '0:00';
+            }
             const minutes = Math.floor(time / 60);
             const seconds = Math.floor(time % 60);
             return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function updateProgress() {
+            const { duration, currentTime } = audioPlayer;
+            if (isNaN(duration)) {
+                currentTimeEl.textContent = '0:00';
+                durationEl.textContent = '0:00';
+                progressBar.style.width = '0%';
+            } else {
+                const progressPercent = (currentTime / duration) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+                currentTimeEl.textContent = formatTime(currentTime);
+                durationEl.textContent = formatTime(duration);
+            }
         }
 
         function setProgress(e) {
@@ -426,6 +435,9 @@
             } else {
                 nextSong();
             }
+        });
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            durationEl.textContent = formatTime(audioPlayer.duration);
         });
 
         // Initial load
