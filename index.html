@@ -98,6 +98,7 @@
             margin-bottom: 15px;
             cursor: pointer;
             overflow: hidden;
+            position: relative;
         }
         .progress-bar {
             width: 0%;
@@ -122,6 +123,22 @@
             transition: opacity 0.2s ease;
         }
         .progress-container:hover .progress-bar::after {
+            opacity: 1;
+        }
+        .progress-hover-time {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            bottom: 100%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .progress-container:hover .progress-hover-time {
             opacity: 1;
         }
         .time-info {
@@ -165,7 +182,7 @@
             gap: 10px;
         }
         .volume-slider {
-            -webkit-appearance: none;
+            appearance: none;
             width: 100px;
             height: 5px;
             border-radius: 2.5px;
@@ -241,6 +258,33 @@
                 max-height: none;
             }
         }
+        @media (max-width: 767px) {
+            .player-container {
+                width: 90%;
+            }
+            .controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .control-btn {
+                margin: 5px;
+            }
+        }
+        /* Smooth animations */
+        .playlist-item,
+        .control-btn,
+        .volume-slider,
+        .progress-bar,
+        .album-art img {
+            transition: all 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
     </style>
 </head>
 <body>
@@ -255,23 +299,24 @@
             </div>
             <div class="progress-container" id="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
+                <div class="progress-hover-time" id="progress-hover-time"></div>
             </div>
             <div class="time-info">
                 <span id="current-time">0:00</span>
                 <span id="duration">0:00</span>
             </div>
             <div class="controls">
-                <button class="control-btn" id="shuffle"><i class="material-icons">shuffle</i></button>
-                <button class="control-btn" id="prev"><i class="material-icons">skip_previous</i></button>
-                <button class="control-btn play-pause" id="play-pause"><i class="material-icons">play_arrow</i></button>
-                <button class="control-btn" id="next"><i class="material-icons">skip_next</i></button>
-                <button class="control-btn" id="repeat"><i class="material-icons">repeat</i></button>
+                <button class="control-btn" id="shuffle" aria-label="Shuffle"><i class="material-icons">shuffle</i></button>
+                <button class="control-btn" id="prev" aria-label="Previous song"><i class="material-icons">skip_previous</i></button>
+                <button class="control-btn play-pause" id="play-pause" aria-label="Play or pause"><i class="material-icons">play_arrow</i></button>
+                <button class="control-btn" id="next" aria-label="Next song"><i class="material-icons">skip_next</i></button>
+                <button class="control-btn" id="repeat" aria-label="Repeat"><i class="material-icons">repeat</i></button>
             </div>
             <div class="volume-container">
-                <button class="control-btn" id="mute"><i class="material-icons">volume_up</i></button>
-                <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.1" value="1">
+                <button class="control-btn" id="mute" aria-label="Mute"><i class="material-icons">volume_up</i></button>
+                <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.1" value="1" aria-label="Volume control">
             </div>
-            <div class="visualizer" id="visualizer"></div>
+            <div class="visualizer" id="visualizer" aria-hidden="true"></div>
         </div>
         <div class="playlist" id="playlist"></div>
     </div>
@@ -287,6 +332,7 @@
         const volumeSlider = document.getElementById('volume-slider');
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress-bar');
+        const progressHoverTime = document.getElementById('progress-hover-time');
         const currentTimeEl = document.getElementById('current-time');
         const durationEl = document.getElementById('duration');
         const visualizer = document.getElementById('visualizer');
@@ -299,10 +345,11 @@
         let isShuffle = false;
         let isRepeat = false;
         let currentSongIndex = 0;
+        let crossfadeInterval;
 
         const songs = [
-        { title: 'Requim', artist: 'Vqesh', src: 'Audio/Requim.mp3', art: 'Images/Cute.jpeg' },
-        { title: 'Alive', artist: 'Vqesh', src: 'Audio/Alive.mp3', art: 'Images/Alive.jpeg' },
+            { title: 'Requim', artist: 'Vqesh', src: 'Audio/Requim.mp3', art: 'Images/Cute.jpeg' },
+            { title: 'Alive', artist: 'Vqesh', src: 'Audio/Alive.mp3', art: 'Images/Alive.jpeg' },
             { title: 'Echo', artist: 'Vqesh', src: 'Audio/Echo.mp3', art: 'Images/Sleep.jpeg' },
         ];
 
@@ -314,6 +361,11 @@
             artistEl.textContent = song.artist;
             currentSongIndex = index;
             updatePlaylistActiveItem();
+
+            // Add fade-in animation
+            albumArt.classList.remove('fade-in');
+            void albumArt.offsetWidth; // Trigger reflow
+            albumArt.classList.add('fade-in');
         }
 
         function updatePlaylistActiveItem() {
@@ -330,9 +382,11 @@
             if (isPlaying) {
                 audioPlayer.pause();
                 playPauseBtn.innerHTML = '<i class="material-icons">play_arrow</i>';
+                playPauseBtn.setAttribute('aria-label', 'Play');
             } else {
                 audioPlayer.play();
                 playPauseBtn.innerHTML = '<i class="material-icons">pause</i>';
+                playPauseBtn.setAttribute('aria-label', 'Pause');
             }
             isPlaying = !isPlaying;
         }
@@ -353,8 +407,7 @@
                 durationEl.textContent = '0:00';
                 progressBar.style.width = '0%';
             } else {
-                const progressPercent = (currentTime / duration) * 100;
-                progressBar.style.width = `${progressPercent}%`;
+                const progressPercent = (currentTime / duration) * 100;progressBar.style.width = `${progressPercent}%`;
                 currentTimeEl.textContent = formatTime(currentTime);
                 durationEl.textContent = formatTime(duration);
             }
@@ -373,7 +426,9 @@
                 currentSongIndex = songs.length - 1;
             }
             loadSong(currentSongIndex);
-            if (isPlaying) audioPlayer.play();
+            if (isPlaying) {
+                crossfade(() => audioPlayer.play());
+            }
         }
 
         function nextSong() {
@@ -382,27 +437,33 @@
                 currentSongIndex = 0;
             }
             loadSong(currentSongIndex);
-            if (isPlaying) audioPlayer.play();
+            if (isPlaying) {
+                crossfade(() => audioPlayer.play());
+            }
         }
 
         function toggleShuffle() {
             isShuffle = !isShuffle;
             shuffleBtn.style.color = isShuffle ? 'var(--primary-color)' : 'var(--text-color)';
+            shuffleBtn.setAttribute('aria-pressed', isShuffle);
         }
 
         function toggleRepeat() {
             isRepeat = !isRepeat;
             repeatBtn.style.color = isRepeat ? 'var(--primary-color)' : 'var(--text-color)';
+            repeatBtn.setAttribute('aria-pressed', isRepeat);
         }
 
         function toggleMute() {
             audioPlayer.muted = !audioPlayer.muted;
             muteBtn.innerHTML = audioPlayer.muted ? '<i class="material-icons">volume_off</i>' : '<i class="material-icons">volume_up</i>';
+            muteBtn.setAttribute('aria-label', audioPlayer.muted ? 'Unmute' : 'Mute');
         }
 
         function handleVolumeChange() {
             audioPlayer.volume = volumeSlider.value;
             muteBtn.innerHTML = audioPlayer.volume === 0 ? '<i class="material-icons">volume_off</i>' : '<i class="material-icons">volume_up</i>';
+            muteBtn.setAttribute('aria-label', audioPlayer.volume === 0 ? 'Unmute' : 'Mute');
         }
 
         // Create visualizer bars
@@ -423,16 +484,81 @@
             requestAnimationFrame(animateVisualizer);
         }
 
+        // Crossfade effect
+        function crossfade(callback) {
+            const fadeOutDuration = 1000; // 1 second
+            const fadeInDuration = 1000; // 1 second
+            const fadeSteps = 20;
+
+            let volume = 1;
+            const fadeOutStep = volume / fadeSteps;
+
+            clearInterval(crossfadeInterval);
+
+            crossfadeInterval = setInterval(() => {
+                volume -= fadeOutStep;
+                if (volume <= 0) {
+                    clearInterval(crossfadeInterval);
+                    audioPlayer.volume = 0;
+                    callback();
+                    
+                    let fadeInVolume = 0;
+                    crossfadeInterval = setInterval(() => {
+                        fadeInVolume += fadeOutStep;
+                        if (fadeInVolume >= 1) {
+                            clearInterval(crossfadeInterval);
+                            audioPlayer.volume = 1;
+                        } else {
+                            audioPlayer.volume = fadeInVolume;
+                        }
+                    }, fadeInDuration / fadeSteps);
+                } else {
+                    audioPlayer.volume = volume;
+                }
+            }, fadeOutDuration / fadeSteps);
+        }
+
+        // Progress bar hover effect
+        progressContainer.addEventListener('mousemove', (e) => {
+            const width = progressContainer.clientWidth;
+            const clickX = e.offsetX;
+            const duration = audioPlayer.duration;
+            const hoverTime = (clickX / width) * duration;
+            progressHoverTime.textContent = formatTime(hoverTime);
+            progressHoverTime.style.left = `${clickX}px`;
+        });
+
         // Populate playlist
         songs.forEach((song, index) => {
             const item = document.createElement('div');
             item.classList.add('playlist-item');
             item.textContent = `${song.title} - ${song.artist}`;
+            item.setAttribute('role', 'button');
+            item.setAttribute('tabindex', '0');
             item.addEventListener('click', () => {
                 loadSong(index);
-                if (isPlaying) audioPlayer.play();
+                if (isPlaying) crossfade(() => audioPlayer.play());
+            });
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    loadSong(index);
+                    if (isPlaying) crossfade(() => audioPlayer.play());
+                }
             });
             playlist.appendChild(item);
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && e.target === document.body) {
+                e.preventDefault();
+                togglePlayPause();
+            } else if (e.key === 'ArrowLeft') {
+                prevSong();
+            } else if (e.key === 'ArrowRight') {
+                nextSong();
+            }
         });
 
         // Event listeners
