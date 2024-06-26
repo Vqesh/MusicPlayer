@@ -353,20 +353,22 @@
             { title: 'Echo', artist: 'Vqesh', src: 'Audio/Echo.mp3', art: 'Images/Sleep.jpeg' },
         ];
 
-        function loadSong(index) {
-            const song = songs[index];
-            audioPlayer.src = song.src;
-            albumArt.src = song.art;
-            songTitleEl.textContent = song.title;
-            artistEl.textContent = song.artist;
-            currentSongIndex = index;
-            updatePlaylistActiveItem();
+// Modify the existing loadSong function to include aria updates
+function loadSong(index) {
+    const song = songs[index];
+    audioPlayer.src = song.src;
+    albumArt.src = song.art;
+    songTitleEl.textContent = song.title;
+    artistEl.textContent = song.artist;
+    currentSongIndex = index;
+    updatePlaylistActiveItem();
+    updatePlaylistAria(index);
 
-            // Add fade-in animation
-            albumArt.classList.remove('fade-in');
-            void albumArt.offsetWidth; // Trigger reflow
-            albumArt.classList.add('fade-in');
-        }
+    // Add fade-in animation
+    albumArt.classList.remove('fade-in');
+    void albumArt.offsetWidth; // Trigger reflow
+    albumArt.classList.add('fade-in');
+}
 
         function updatePlaylistActiveItem() {
             const items = playlist.getElementsByClassName('playlist-item');
@@ -528,39 +530,40 @@
             progressHoverTime.style.left = `${clickX}px`;
         });
 
-        // Populate playlist
-        songs.forEach((song, index) => {
-            const item = document.createElement('div');
-            item.classList.add('playlist-item');
-            item.textContent = `${song.title} - ${song.artist}`;
-            item.setAttribute('role', 'button');
-            item.setAttribute('tabindex', '0');
-            item.addEventListener('click', () => {
-                loadSong(index);
-                if (isPlaying) crossfade(() => audioPlayer.play());
-            });
-            item.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    loadSong(index);
-                    if (isPlaying) crossfade(() => audioPlayer.play());
-                }
-            });
-            playlist.appendChild(item);
-        });
-
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === ' ' && e.target === document.body) {
-                e.preventDefault();
-                togglePlayPause();
-            } else if (e.key === 'ArrowLeft') {
-                prevSong();
-            } else if (e.key === 'ArrowRight') {
-                nextSong();
-            }
-        });
-
+ // Populate playlist with improved accessibility
+songs.forEach((song, index) => {
+    const item = document.createElement('div');
+    item.classList.add('playlist-item');
+    item.textContent = `${song.title} - ${song.artist}`;
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.setAttribute('aria-label', `Play ${song.title} by ${song.artist}`);
+    item.setAttribute('aria-pressed', 'false');
+    
+    item.addEventListener('click', () => {
+        loadSong(index);
+        if (isPlaying) crossfade(() => audioPlayer.play());
+        updatePlaylistAria(index);
+    });
+    
+    item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            loadSong(index);
+            if (isPlaying) crossfade(() => audioPlayer.play());
+            updatePlaylistAria(index);
+        }
+    });
+    // Add this new function to update aria-pressed attributes
+function updatePlaylistAria(currentIndex) {
+    const items = playlist.getElementsByClassName('playlist-item');
+    for (let i = 0; i < items.length; i++) {
+        items[i].setAttribute('aria-pressed', i === currentIndex ? 'true' : 'false');
+    }
+}
+    
+    playlist.appendChild(item);
+});
         // Event listeners
         playPauseBtn.addEventListener('click', togglePlayPause);
         prevBtn.addEventListener('click', prevSong);
